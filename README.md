@@ -18,7 +18,6 @@ The requirements are:
 * an NVIDIA card with CUDA cores (like RTX...)
 * python 3
 * ffmpeg
-* on windows, a tool to 
 
 ## Installation
 
