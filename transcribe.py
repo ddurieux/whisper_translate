@@ -12,9 +12,7 @@ from queue import Queue
 from tempfile import NamedTemporaryFile
 from time import sleep
 from sys import platform
-from deep_translator import ChatGptTranslator
-
-chatGPTKey = ''
+from transformers import *
 
 def main():
     parser = argparse.ArgumentParser()
@@ -29,10 +27,14 @@ def main():
     parser.add_argument("--phrase_timeout", default=3,
                         help="How much empty space between recordings before we "
                              "consider it a new line in the transcription.", type=float)
-
     parser.add_argument("--default_microphone", default='pulse',
                         help="Default microphone name for SpeechRecognition. "
                              "Run this with 'list' to view available Microphones.", type=str)
+    parser.add_argument("--lang_source", default="en",
+                        help="Source language.", type=float)
+    parser.add_argument("--lang_translation", default="fr",
+                        help="Language to translate.", type=float)
+
     args = parser.parse_args()
 
     # The last time a recording was retreived from the queue.
@@ -80,6 +82,7 @@ def main():
 
     temp_file = NamedTemporaryFile().name
     transcription = ['']
+    translation = ['']
 
     with source:
         recorder.adjust_for_ambient_noise(source)
@@ -98,11 +101,23 @@ def main():
     recorder.listen_in_background(source, record_callback, phrase_time_limit=record_timeout)
 
     # Cue the user that we're ready to go.
-    print("Model loaded.\n")
+    print("Transcribe model loaded.\n")
+
+    # load translation
+    # https://thepythoncode.com/article/machine-translation-using-huggingface-transformers-in-python
+    src = args.lang_source
+    dst = args.lang_translation
+
+    task_name = f"translation_{src}_to_{dst}"
+    model_name = f"Helsinki-NLP/opus-mt-{src}-{dst}"
+
+    translator  = pipeline(task_name, model=model_name, tokenizer=model_name)
+    print("Translation model loaded.\n")
 
     while True:
         try:
-            filedisk = open('subtitle.txt', 'a', encoding='utf-8-sig')
+            filediskSource = open('subtitle_' + src + '.txt', 'a', encoding='utf-8-sig')
+            filediskTranslate = open('subtitle_' + dst + '.txt', 'a', encoding='utf-8-sig')
             now = datetime.utcnow()
             # Pull raw recorded audio from the queue.
             if not data_queue.empty():
@@ -131,24 +146,27 @@ def main():
                 # Read the transcription.
                 result = audio_model.transcribe(temp_file, fp16=torch.cuda.is_available())
                 text = result['text'].strip()
-                text = ChatGptTranslator(api_key=chatGPTKey, target='french').translate(text=text)
-                # text = text.replace('navires', 'vaisseaux')
-                # text = text.replace('navire', 'vaisseau')
-                # text = text.replace('Navires', 'Vaisseaux')
-                # text = text.replace('Navire', 'Vaisseau')
+                text = text.replace('ship', 'space ship')
+                textTranslated = translator(text)[0]["translation_text"]
 
                 # If we detected a pause between recordings, add a new item to our transcripion.
                 # Otherwise edit the existing one.
                 if phrase_complete:
                     transcription.append(text)
+                    translation.append(textTranslated)
                 else:
                     transcription[-1] = text
+                    translation[-1] = textTranslated
 
                 # Clear the console to reprint the updated transcription.
                 os.system('cls' if os.name=='nt' else 'clear')
                 for line in transcription:
+                    # print(line)
+                    print(line, file=filediskSource)
+                for line in translation:
                     print(line)
-                    print(line, file=filedisk)
+                    print(line, file=filediskTranslate)
+
                 # Flush stdout.
                 print('', end='', flush=True)
 

@@ -25,6 +25,7 @@ You need install:
 
 * install [ffmpeg](https://ffmpeg.org/), on windows, add the bin path to the environment *PATH*
 * install CUDA toolkit https://developer.nvidia.com/cuda-toolkit, **YOU NEED INSTALL IT BEFORE PYTHON LIBS DEFINED AT NEXT BULLET**
+* install [git](https://git-scm.com/downloads)
 * Install python dependencies:
     ```
     pip install -r requirements.txt
@@ -64,4 +65,4 @@ Under linux, you can select the sound card device named *pipewire*.
 ### Windows
 
 * install [VB-Audio](https://vb-audio.com/Cable/) in case you want translate streaming video and not only your microphone
-* manage in "app volume and device preferences" in windows settings to put firefox video into *Cable Input (VB-Audio Virtual Cable)*
+* manage in "app volume and device preferences" in windows settings to put your browser video into *Cable Input (VB-Audio Virtual Cable)*
